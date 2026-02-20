@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Estimador Avanzado | .NET + Angular + SAP (Catálogo Completo)</title>
+  <style>
+    :root{
+      --bg:#0f172a; --surface:#1e293b; --surface-hover:#334155;
+      --primary:#3b82f6; --accent:#10b981; --text-main:#f8fafc;
+      --text-muted:#94a3b8; --border:#334155;
+    }
+    *{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',system-ui,sans-serif}
+    body{background:var(--bg);color:var(--text-main);padding:2rem;display:flex;justify-content:center}
+    .container{max-width:1250px;width:100%;display:grid;grid-template-columns:2fr 1fr;gap:2rem;align-items:start}
+    .section-card{background:var(--surface);padding:2rem;border-radius:12px;border:1px solid var(--border);margin-bottom:1.5rem}
+    .section-header{display:flex;align-items:center;margin-bottom:1.5rem;padding-bottom:.8rem;border-bottom:1px solid var(--border)}
+    .section-header h2{font-size:1.25rem;font-weight:600}
+    .section-icon{margin-right:.8rem;font-size:1.5rem}
+    .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem}
+    .grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem}
+    .form-group{display:flex;flex-direction:column;gap:.5rem}
+    .form-group.full{grid-column:1/-1}
+    label{font-size:.9rem;font-weight:500;color:var(--text-muted)}
+    select,input[type="number"]{
+      width:100%;padding:.75rem;background:var(--bg);border:1px solid var(--border);
+      border-radius:6px;color:var(--text-main);font-size:.95rem;outline:none
+    }
+    select:focus,input:focus{border-color:var(--primary)}
+    .options-group{display:flex;flex-wrap:wrap;gap:1rem}
+    .toggle-label{
+      display:flex;align-items:center;gap:.5rem;font-size:.95rem;cursor:pointer;
+      padding:.5rem 1rem;background:var(--bg);border:1px solid var(--border);
+      border-radius:6px;transition:.2s
+    }
+    .toggle-label:hover{background:var(--surface-hover)}
+    input[type="checkbox"]{accent-color:var(--primary);width:1.1rem;height:1.1rem}
+    .hint{font-size:.8rem;color:var(--text-muted);line-height:1.3}
+    .results-panel{
+      background:var(--surface);padding:2rem;border-radius:12px;border:1px solid var(--primary);
+      position:sticky;top:2rem
+    }
+    .results-panel h3{margin-bottom:1.5rem;font-size:1.4rem;border-bottom:1px solid var(--border);padding-bottom:1rem}
+    .result-row{display:flex;justify-content:space-between;margin-bottom:.8rem;font-size:.95rem;color:var(--text-muted);gap:1rem}
+    .result-row span.value{font-weight:600;color:var(--text-main);text-align:right;white-space:nowrap}
+    .divider{height:1px;background:var(--border);margin:1.5rem 0}
+    .total-box{background:var(--bg);padding:1.5rem;border-radius:8px;text-align:center;border:1px solid var(--accent)}
+    .total-box span{display:block;font-size:.9rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:.5rem}
+    .total-box .grand-total{font-size:2.5rem;font-weight:700;color:var(--accent)}
+    @media (max-width:992px){.container{grid-template-columns:1fr}.results-panel{position:static}}
+    @media (max-width:600px){.grid-2,.grid-3{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="form-sections" onchange="calcularEstimacion()">
+
+    <!-- 1. General -->
+    <div class="section-card">
+      <div class="section-header"><span class="section-icon">🧱</span><h2>1. General</h2></div>
+      <div class="grid-2">
+        <div class="form-group">
+          <label>Tipo de requerimiento</label>
+          <select id="tipoReq">
+            <option value="nuevo">Nueva funcionalidad</option>
+            <option value="modificacion">Modificación (+20%)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Ambigüedad HU</label>
+          <select id="ambiguedad">
+            <option value="0">Clara (0%)</option>
+            <option value="0.2">Media (+20%)</option>
+            <option value="0.4">Alta (+40%)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Riesgo técnico</label>
+          <select id="riesgoTecnico">
+            <option value="0">Bajo (0%)</option>
+            <option value="0.15">Medio (+15%)</option>
+            <option value="0.30">Alto (+30%)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Dependencias externas</label>
+          <select id="dependencias">
+            <option value="0">Ninguna (0%)</option>
+            <option value="0.2">Sí (+20%)</option>
+          </select>
+        </div>
+
+        <div class="form-group full">
+          <label>Gestión / Coordinación</label>
+          <div class="options-group">
+            <label class="toggle-label"><input type="checkbox" value="2" class="opt general"> Grooming refinamiento (+2h)</label>
+            <label class="toggle-label"><input type="checkbox" value="2" class="opt general"> Revisión con negocio (+2h)</label>
+            <label class="toggle-label"><input type="checkbox" value="3" class="opt general"> UAT acompañamiento (+3h)</label>
+            <label class="toggle-label"><input type="checkbox" value="2" class="opt general"> Documentación funcional (+2h)</label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Frontend Angular -->
+    <div class="section-card">
+      <div class="section-header"><span class="section-icon">🎨</span><h2>2. Frontend (Angular)</h2></div>
+
+      <div class="form-group full">
+        <label>Nivel de complejidad general Front</label>
+        <select id="feBase">
+          <option value="0">No aplica</option>
+          <option value="6">Simple</option>
+          <option value="12">Media</option>
+          <option value="20">Alta</option>
+        </select>
+        <div class="hint">Esto es un baseline. Abajo marcas capabilities específicas.</div>
+      </div>
+
+      <div class="form-group full">
+        <label>Catálogo Front (capabilities típicas)</label>
+        <div class="options-group">
+          <!-- UI/UX -->
+          <label class="toggle-label"><input type="checkbox" value="3" class="opt fe"> Maquetación UI (+3h)</label>
+          <label class="toggle-label"><input type="checkbox" value="4" class="opt fe"> Diseño responsive (+4h)</label>
+          <label class="toggle-label"><input type="checkbox" value="3" class="opt fe"> Accesibilidad (a11y) (+3h)</label>
+          <label class="toggle-label"><input type="checkbox" value="3" class="opt fe"> i18n / multi-idioma (+3h)</label>
+
+          <!-- Forms -->
+          <label class="toggle-label"><input type="checkbox" value="4" class="opt fe"> Formularios reactivos (+4h)</label>
+          <label class="toggle-label"><input type="checkbox" value="3" class="opt fe"> Validaciones complejas (+3h)</label>
+          <label class="toggle-label"><input type="checkbox" value="4" class="opt fe"> Wizard / pasos (+4h)</label>
+          <label class="toggle-label"><input type="checkbox" value="3" class="opt fe"> Subida de archivos (+3h)</label>
+
+          <!-- Data -->
+          <label class="toggle-label"><input type="checkbox" value="6" class="opt fe"> Tablas con filtros/paginación (+6h)</label>
+          <label class="toggle-label"><input type="checkbox" value="4" class="opt fe"> Exportar (Excel/PDF/CSV) (+4h)</label>
+          <label class="toggle-label"><input type="checkbox" value="4" class="opt fe"> Gráficas / dashboards (+4h)</label>
+          <label class="toggle-label"><input type="checkbox" value="4" class="opt fe"> Importar (CSV/Excel) (+4h)</label>
+
+          <!-- State/Arch -->
+          <label class="toggle-label"><input type="checkbox" value="4" class="opt fe"> Manejo estado (NgRx/Signals) (+4h)</label>
+          <label class="toggle-label"><input type="checkbox" value="3" class="opt fe"> Ruteo avanzado/guards (+3h)</label>
+          <label class="toggle-label"><input type="checkbox" value="2" class="opt fe"> Interceptores / manejo errores (+2h)</label>
+
+          <!-- Security -->
+          <label class="toggle-label"><input type="checkbox" value="4" class="opt fe"> Permisos dinámicos UI (+4h)</label>
+          <label class="toggle-label"><input type="checkbox" value="3" class="opt fe"> Integración SSO (front) (+3h)</label>
+
+          <!-- Performance -->
+          <label class="toggle-label"><input type="checkbox" value="3" class="opt fe"> Optimización performance (+3h)</label>
+          <label class="toggle-label"><input type="checkbox" value="3" class="opt fe"> Lazy loading / code split (+3h)</label>
+
+          <!-- Misc -->
+          <label class="toggle-label"><input type="checkbox" value="3" class="opt fe"> Notificaciones/toasts (+3h)</label>
+          <label class="toggle-label"><input type="checkbox" value="3" class="opt fe"> Modales/navegación compleja (+3h)</label>
+        </div>
+
+        <div class="grid-3" style="margin-top:1rem">
+          <div class="form-group">
+            <label>Complejidad UI seleccionada</label>
+            <select id="feComplexFactor">
+              <option value="1">Simple (x1.0)</option>
+              <option value="1.15">Media (x1.15)</option>
+              <option value="1.35">Alta (x1.35)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>¿Nuevo módulo o pantalla?</label>
+            <select id="feNewModule">
+              <option value="0">No</option>
+              <option value="4">Sí (+4h)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>¿Refactor front existente?</label>
+            <select id="feRefactor">
+              <option value="0">No</option>
+              <option value="4">Sí (+4h)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Backend .NET -->
+    <div class="section-card">
+      <div class="section-header"><span class="section-icon">⚙️</span><h2>3. Backend (.NET)</h2></div>
+
+      <div class="form-group full">
+        <label>Nivel de complejidad general Back</label>
+        <select id="beBase">
+          <option value="0">No aplica</option>
+          <option value="8">Simple</option>
+          <option value="16">Media</option>
+          <option value="26">Alta</option>
+        </select>
+      </div>
+
+      <div class="form-group full">
+        <label>Catálogo Back (capabilities típicas)</label>
+        <div class="options-group">
+          <!-- APIs -->
+          <label class="toggle-label"><input type="checkbox" value="6" class="opt be"> CRUD/Endpoints (+6h)</label>
+          <label class="toggle-label"><input type="checkbox" value="4" class="opt be"> Versionado API (+4h)</label>
+          <label class="toggle-label"><input type="checkbox" value="4" class="opt be"> Validación (FluentValidation) (+4h)</label>
+          <label class="toggle-label"><input type="checkbox" value="4" class="opt be"> Manejo errores/global (+4h)</label>
+
+          <!-- Business -->
+          <label class="toggle-label"><input type="checkbox" value="8" class="opt be"> Reglas negocio complejas (+8h)</label>
+          <label class="toggle-label"><input type="checkbox" value="6" class="opt be"> Flujos/estados (workflow) (+6h)</label>
+          <label class="toggle-label"><input type="checkbox" value="6" class="opt be"> Cálculos / algoritmos (+6h)</label>
+
+          <!-- Security -->
+          <label class="toggle-label"><input type="checkbox" value="6" class="opt be"> AuthN/AuthZ (JWT/roles/claims) (+6h)</label>
+          <label class="toggle-label"><input type="checkbox" value="6" class="opt be"> SSO/OIDC (back) (+6h)</label>
+          <label class="toggle-label"><input type="checkbox" value="4" class="opt be"> Rate limiting (+4h)</label>
+
+          <!-- Async -->
+          <label class="toggle-label"><input type="checkbox" value="10" class="opt be"> Jobs asíncronos (+10h)</label>
+          <label class="toggle-label"><input type="checkbox" value="8" class="opt be"> Mensajería/colas (Rabbit/Kafka) (+8h)</label>
+
+          <!-- Integración interna -->
+          <label class="toggle-label"><input type="checkbox" value="6" class="opt be"> Consumo APIs internas (+6h)</label>
+          <label class="toggle-label"><input type="checkbox" value="6" class="opt be"> Webhooks (+6h)</label>
+
+          <!-- Observabilidad -->
+          <label class="toggle-label"><input type="checkbox" value="3" class="opt be"> Logging estructurado (+3h)</label>
+          <label class="toggle-label"><input type="checkbox" value="4" class="opt be"> Métricas / tracing (+4h)</label>
+
+          <!-- Performance -->
+          <label class="toggle-label"><input type="checkbox" value="6" class="opt be"> Cache (Redis/mem) (+6h)</label>
+          <label class="toggle-label"><input type="checkbox" value="6" class="opt be"> Performance tuning (+6h)</label>
+
+          <!-- Docs -->
+          <label class="toggle-label"><input type="checkbox" value="3" class="opt be"> Swagger detallado (+3h)</label>
+        </div>
+
+        <div class="grid-3" style="margin-top:1rem">
+          <div class="form-group">
+            <label>Complejidad lógica seleccionada</label>
+            <select id="beComplexFactor">
+              <option value="1">Simple (x1.0)</option>
+              <option value="1.2">Media (x1.2)</option>
+              <option value="1.45">Alta (x1.45)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>¿Refactor back existente?</label>
+            <select id="beRefactor">
+              <option value="0">No</option>
+              <option value="6">Sí (+6h)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>¿Compatibilidad / retrocompatibilidad?</label>
+            <select id="beCompat">
+              <option value="0">No</option>
+              <option value="4">Sí (+4h)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. DB SQL/HANA -->
+    <div class="section-card">
+      <div class="section-header"><span class="section-icon">🗄️</span><h2>4. Bases de Datos (SQL / HANA)</h2></div>
+
+      <div class="grid-2">
+        <div class="form-group">
+          <label>Base DB (diseño/cambios)</label>
+          <select id="dbBase">
+            <option value="0">No aplica</option>
+            <option value="4">Simple</option>
+            <option value="8">Media</option>
+            <option value="14">Alta</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Motor principal</label>
+          <select id="dbMotor">
+            <option value="0">Solo SQL Server</option>
+            <option value="4">Incluye SAP HANA (+4h)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group full" style="margin-top:1rem">
+        <label>Catálogo DB (capabilities típicas)</label>
+        <div class="options-group">
+          <label class="toggle-label"><input type="checkbox" value="4" class="opt db"> Nuevas tablas/relaciones (+4h)</label>
+          <label class="toggle-label"><input type="checkbox" value="4" class="opt db"> Alteraciones schema (+4h)</label>
+          <label class="toggle-label"><input type="checkbox" value="6" class="opt db"> Stored procedures (+6h)</label>
+          <label class="toggle-label"><input type="checkbox" value="6" class="opt db"> Vistas / vistas materializadas (+6h)</label>
+          <label class="toggle-label"><input type="checkbox" value="4" class="opt db"> Triggers (+4h)</label>
+          <label class="toggle-label"><input type="checkbox" value="3" class="opt db"> Índices/particionamiento (+3h)</label>
+          <label class="toggle-label"><input type="checkbox" value="6" class="opt db"> Optimización consultas (+6h)</label>
+          <label class="toggle-label"><input type="checkbox" value="8" class="opt db"> Migración/ETL scripts (+8h)</label>
+          <label class="toggle-label"><input type="checkbox" value="4" class="opt db"> Auditoría/bitácora (+4h)</label>
+          <label class="toggle-label"><input type="checkbox" value="4" class="opt db"> Permisos/roles BD (+4h)</label>
+          <label class="toggle-label"><input type="checkbox" value="4" class="opt db"> Manejo errores/transactions (+4h)</label>
+          <label class="toggle-label"><input type="checkbox" value="6" class="opt db"> Job/plan mantenimiento (+6h)</label>
+        </div>
+
+        <div class="grid-3" style="margin-top:1rem">
+          <div class="form-group">
+            <label>Complejidad DB seleccionada</label>
+            <select id="dbComplexFactor">
+              <option value="1">Simple (x1.0)</option>
+              <option value="1.2">Media (x1.2)</option>
+              <option value="1.5">Alta (x1.5)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>¿Datos sensibles / cifrado?</label>
+            <select id="dbSensitive">
+              <option value="0">No</option>
+              <option value="6">Sí (+6h)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>¿Ventana de despliegue restringida?</label>
+            <select id="dbWindow">
+              <option value="0">No</option>
+              <option value="4">Sí (+4h)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. Integraciones -->
+    <div class="section-card">
+      <div class="section-header"><span class="section-icon">🔗</span><h2>5. Integraciones (SAP / Externas / Eventos)</h2></div>
+
+      <div class="form-group full">
+        <label>Catálogo Integraciones</label>
+        <div class="options-group">
+          <label class="toggle-label"><input type="checkbox" value="12" class="opt int"> SAP RFC/BAPI/BPA (+12h)</label>
+          <label class="toggle-label"><input type="checkbox" value="10" class="opt int"> SAP IDoc/PI/PO (+10h)</label>
+          <label class="toggle-label"><input type="checkbox" value="8" class="opt int"> APIs terceros (REST) (+8h)</label>
+          <label class="toggle-label"><input type="checkbox" value="10" class="opt int"> SOAP legacy (+10h)</label>
+          <label class="toggle-label"><input type="checkbox" value="8" class="opt int"> SFTP / intercambio archivos (+8h)</label>
+          <label class="toggle-label"><input type="checkbox" value="6" class="opt int"> Transformación datos compleja (+6h)</label>
+          <label class="toggle-label"><input type="checkbox" value="6" class="opt int"> Reintentos/idempotencia (+6h)</label>
+          <label class="toggle-label"><input type="checkbox" value="6" class="opt int"> Manejo errores/colas DLQ (+6h)</label>
+        </div>
+        <div class="grid-3" style="margin-top:1rem">
+          <div class="form-group">
+            <label>Complejidad integración</label>
+            <select id="intComplexFactor">
+              <option value="1">Simple (x1.0)</option>
+              <option value="1.25">Media (x1.25)</option>
+              <option value="1.6">Alta (x1.6)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>¿Ambientes / llaves / certificados?</label>
+            <select id="intCerts">
+              <option value="0">No</option>
+              <option value="4">Sí (+4h)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>¿Pruebas con tercero (agenda)?</label>
+            <select id="intCoord">
+              <option value="0">No</option>
+              <option value="6">Sí (+6h)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 6. Seguridad / Compliance -->
+    <div class="section-card">
+      <div class="section-header"><span class="section-icon">🛡️</span><h2>6. Seguridad / Compliance</h2></div>
+      <div class="form-group full">
+        <label>Controles típicos</label>
+        <div class="options-group">
+          <label class="toggle-label"><input type="checkbox" value="6" class="opt sec"> RBAC/roles completos (+6h)</label>
+          <label class="toggle-label"><input type="checkbox" value="4" class="opt sec"> Auditoría de acciones (+4h)</label>
+          <label class="toggle-label"><input type="checkbox" value="6" class="opt sec"> Datos sensibles (enmascarado/cifrado) (+6h)</label>
+          <label class="toggle-label"><input type="checkbox" value="4" class="opt sec"> OWASP hardening básico (+4h)</label>
+          <label class="toggle-label"><input type="checkbox" value="6" class="opt sec"> Revisión seguridad / approvals (+6h)</label>
+        </div>
+      </div>
+    </div>
+
+    <!-- 7. DevOps / Despliegue / Operación -->
+    <div class="section-card">
+      <div class="section-header"><span class="section-icon">🚀</span><h2>7. DevOps / Despliegue / Operación</h2></div>
+      <div class="form-group full">
+        <label>Entrega y operación</label>
+        <div class="options-group">
+          <label class="toggle-label"><input type="checkbox" value="4" class="opt ops"> Ajustes CI/CD pipeline (+4h)</label>
+          <label class="toggle-label"><input type="checkbox" value="3" class="opt ops"> Configuración ambientes (+3h)</label>
+          <label class="toggle-label"><input type="checkbox" value="3" class="opt ops"> Feature flags/rollout (+3h)</label>
+          <label class="toggle-label"><input type="checkbox" value="4" class="opt ops"> Scripts deploy/rollback (+4h)</label>
+          <label class="toggle-label"><input type="checkbox" value="6" class="opt ops"> Infra cambios (storage, secrets) (+6h)</label>
+          <label class="toggle-label"><input type="checkbox" value="4" class="opt ops"> Monitoreo/alertas config (+4h)</label>
+        </div>
+      </div>
+    </div>
+
+    <!-- 8. QA / Pruebas -->
+    <div class="section-card">
+      <div class="section-header"><span class="section-icon">✅</span><h2>8. QA / Pruebas</h2></div>
+      <div class="form-group full">
+        <label>Pruebas adicionales</label>
+        <div class="options-group">
+          <label class="toggle-label"><input type="checkbox" value="6" class="opt qa"> Unit tests extra (+6h)</label>
+          <label class="toggle-label"><input type="checkbox" value="8" class="opt qa"> Integración / mocks (+8h)</label>
+          <label class="toggle-label"><input type="checkbox" value="10" class="opt qa"> E2E UI automation (+10h)</label>
+          <label class="toggle-label"><input type="checkbox" value="6" class="opt qa"> Hardening / correcciones (+6h)</label>
+          <label class="toggle-label"><input type="checkbox" value="6" class="opt qa"> Performance test (+6h)</label>
+          <label class="toggle-label"><input type="checkbox" value="4" class="opt qa"> Test data management (+4h)</label>
+        </div>
+      </div>
+    </div>
+
+    <!-- 9. Equipo -->
+    <div class="section-card">
+      <div class="section-header"><span class="section-icon">👥</span><h2>9. Equipo y Capacidad</h2></div>
+      <div class="grid-2">
+        <div class="form-group">
+          <label>Experiencia (ajusta esfuerzo)</label>
+          <select id="experiencia">
+            <option value="0.30">Junior (+30%)</option>
+            <option value="0.15">Mid (0%)</option>
+            <option value="0">Senior (-15%)</option>
+            <option value="-0.15">SME (-25%)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label># desarrolladores (afecta duración)</label>
+          <input type="number" id="devCount" min="1" step="1" value="1" />
+        </div>
+        <div class="form-group">
+          <label>Horas productivas por día (por dev)</label>
+          <input type="number" id="horasDia" min="1" max="12" step="0.5" value="8" />
+        </div>
+        <div class="form-group">
+          <label>Paralelización real</label>
+          <select id="paralelizacion">
+            <option value="1">Alta (x1.0)</option>
+            <option value="0.85">Media (x0.85)</option>
+            <option value="0.7">Baja (x0.7)</option>
+          </select>
+        </div>
+      </div>
+      <div class="hint" style="margin-top:.75rem">
+        La paralelización baja “castiga” el efecto de sumar devs (bloqueos, colas, dependencias).
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Resultados -->
+  <div class="results-panel">
+    <h3>Desglose</h3>
+
+    <div class="result-row"><span>General:</span><span class="value" id="resGeneral">0 h</span></div>
+    <div class="result-row"><span>Frontend:</span><span class="value" id="resFe">0 h</span></div>
+    <div class="result-row"><span>Backend:</span><span class="value" id="resBe">0 h</span></div>
+    <div class="result-row"><span>Base de datos:</span><span class="value" id="resDb">0 h</span></div>
+    <div class="result-row"><span>Integraciones:</span><span class="value" id="resInt">0 h</span></div>
+    <div class="result-row"><span>Seguridad:</span><span class="value" id="resSec">0 h</span></div>
+    <div class="result-row"><span>DevOps:</span><span class="value" id="resOps">0 h</span></div>
+    <div class="result-row"><span>QA:</span><span class="value" id="resQa">0 h</span></div>
+
+    <div class="divider"></div>
+
+    <div class="result-row"><span><b>Subtotal base:</b></span><span class="value" id="resBase" style="color:var(--primary)">0 h</span></div>
+    <div class="result-row"><span>Ajuste modificación:</span><span class="value" id="resMod">0 h</span></div>
+    <div class="result-row"><span>Ajuste experiencia:</span><span class="value" id="resExp">0 h</span></div>
+
+    <div class="divider"></div>
+
+    <div style="margin-bottom:1rem;color:var(--text-main);font-weight:600;">Riesgos:</div>
+    <div class="result-row"><span>Ambigüedad:</span><span class="value" id="resAmb">+ 0 h</span></div>
+    <div class="result-row"><span>Riesgo técnico:</span><span class="value" id="resRisk">+ 0 h</span></div>
+    <div class="result-row"><span>Dependencias:</span><span class="value" id="resDep">+ 0 h</span></div>
+
+    <div class="divider"></div>
+
+    <div style="margin-bottom:1rem;color:var(--text-main);font-weight:600;">Duración:</div>
+    <div class="result-row"><span>Capacidad efectiva:</span><span class="value" id="resCap">0 h/día</span></div>
+    <div class="result-row"><span>Días hábiles estimados:</span><span class="value" id="resDias">0 días</span></div>
+
+    <div class="divider"></div>
+
+    <div class="total-box">
+      <span>Total (horas)</span>
+      <div class="grand-total" id="resTotal">0 h</div>
+      <span style="font-size:.8rem;margin-top:.5rem;text-transform:none;">*Horas + conversión a días hábiles.</span>
+    </div>
+  </div>
+</div>
+
+<script>
+  function getVal(id){
+    const el=document.getElementById(id);
+    if(!el) return 0;
+    const v=parseFloat(el.value);
+    return Number.isFinite(v)?v:0;
+  }
+  function getNum(id,fallback=0){
+    const el=document.getElementById(id);
+    if(!el) return fallback;
+    const v=parseFloat(el.value);
+    return Number.isFinite(v)?v:fallback;
+  }
+  function sumByClass(cls){
+    return Array.from(document.querySelectorAll('input.opt.'+cls+':checked'))
+      .reduce((acc,el)=>acc+(parseFloat(el.value)||0),0);
+  }
+  function ceilSafe(n){ return Math.ceil(Number.isFinite(n)?n:0); }
+
+  function calcularEstimacion(){
+    // Por capa (sumas)
+    const general = sumByClass('general');
+
+    // Front: base + checks, luego factor complejidad
+    let fe = getVal('feBase') + sumByClass('fe') + getVal('feNewModule') + getVal('feRefactor');
+    fe = fe * (getVal('feComplexFactor') || 1);
+
+    // Back: base + checks, factor
+    let be = getVal('beBase') + sumByClass('be') + getVal('beRefactor') + getVal('beCompat');
+    be = be * (getVal('beComplexFactor') || 1);
+
+    // DB: base + checks + extras, factor
+    let db = getVal('dbBase') + getVal('dbMotor') + sumByClass('db') + getVal('dbSensitive') + getVal('dbWindow');
+    db = db * (getVal('dbComplexFactor') || 1);
+
+    // Integraciones: checks + extras, factor
+    let intl = sumByClass('int') + getVal('intCerts') + getVal('intCoord');
+    intl = intl * (getVal('intComplexFactor') || 1);
+
+    const sec = sumByClass('sec');
+    const ops = sumByClass('ops');
+    const qa  = sumByClass('qa');
+
+    // Subtotal base
+    const subtotalBase = general + fe + be + db + intl + sec + ops + qa;
+
+    // Modificación +20%
+    const horasMod = (document.getElementById('tipoReq').value === 'modificacion')
+      ? subtotalBase * 0.20
+      : 0;
+
+    const subtotalAjustado = subtotalBase + horasMod;
+
+    // Experiencia (ajusta esfuerzo)
+    const factorExp = getVal('experiencia'); // +/- %
+    const horasExp = subtotalAjustado * factorExp;
+    const subtotalConExp = subtotalAjustado + horasExp;
+
+    // Riesgos (sobre subtotal con exp)
+    const amb = subtotalConExp * getVal('ambiguedad');
+    const risk = subtotalConExp * getVal('riesgoTecnico');
+    const dep = subtotalConExp * getVal('dependencias');
+
+    // Total
+    const totalFinal = subtotalConExp + amb + risk + dep;
+
+    // Duración en días hábiles
+    const devCount = Math.max(1, Math.floor(getNum('devCount',1)));
+    const horasDia = Math.max(1, getNum('horasDia',8));
+    const paral = Math.max(0.1, Math.min(1, getVal('paralelizacion') || 1));
+    const capEfectiva = devCount * horasDia * paral;
+    const dias = capEfectiva > 0 ? (totalFinal / capEfectiva) : 0;
+
+    // Render
+    document.getElementById('resGeneral').innerText = ceilSafe(general) + ' h';
+    document.getElementById('resFe').innerText = ceilSafe(fe) + ' h';
+    document.getElementById('resBe').innerText = ceilSafe(be) + ' h';
+    document.getElementById('resDb').innerText = ceilSafe(db) + ' h';
+    document.getElementById('resInt').innerText = ceilSafe(intl) + ' h';
+    document.getElementById('resSec').innerText = ceilSafe(sec) + ' h';
+    document.getElementById('resOps').innerText = ceilSafe(ops) + ' h';
+    document.getElementById('resQa').innerText = ceilSafe(qa) + ' h';
+
+    document.getElementById('resBase').innerText = ceilSafe(subtotalBase) + ' h';
+    document.getElementById('resMod').innerText = '+ ' + ceilSafe(horasMod) + ' h';
+    document.getElementById('resExp').innerText = (horasExp>=0?'+ ':'- ') + ceilSafe(Math.abs(horasExp)) + ' h';
+
+    document.getElementById('resAmb').innerText = '+ ' + ceilSafe(amb) + ' h';
+    document.getElementById('resRisk').innerText = '+ ' + ceilSafe(risk) + ' h';
+    document.getElementById('resDep').innerText = '+ ' + ceilSafe(dep) + ' h';
+
+    document.getElementById('resCap').innerText = (Math.round(capEfectiva*10)/10) + ' h/día';
+    document.getElementById('resDias').innerText = ceilSafe(dias) + ' días';
+
+    document.getElementById('resTotal').innerText = ceilSafe(totalFinal) + ' h';
+  }
+
+  window.onload = calcularEstimacion;
+</script>
+
+</body>
+</html>
